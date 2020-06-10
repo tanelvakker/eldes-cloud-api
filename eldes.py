@@ -1,7 +1,9 @@
+"""Eldes client"""
 import requests
 import json
 import datetime
 import os.path
+import time
 
 class ApiError(Exception):
     """An API Error Exception"""
@@ -17,6 +19,7 @@ class EldesClient:
         self.username = username
         self.password = password
         self.hostDeviceId = hostDeviceId
+        self.refresh_token = None
         self.refresh_token_file = refresh_token_file
         self.url = "https://cloud.eldesalarms.com:8083/api/"
         self._create_https_connection()
@@ -34,6 +37,7 @@ class EldesClient:
     def _post(self, endpoint, body):
         r = self.httpsession.post(self.url+endpoint, json=body, timeout=(5,10))
         if r.status_code == 401:
+            self._update_refresh_token(None)
             self._login()
             r = self._post(endpoint, body)
         return r
@@ -42,7 +46,7 @@ class EldesClient:
         r = self.httpsession.get(self.url+endpoint, timeout=(5,10))
         if r.status_code == 401:
             self._login()
-            r = self._post(endpoint, body)
+            r = self._get(endpoint)
         return r
 
     def _load_refresh_token(self):
@@ -132,6 +136,7 @@ class EldesClient:
         r = self._post("device/action/arm", body=arm_request)
         if r.status_code == 202:
             self.last_update["devices"] = datetime.datetime.now() - datetime.timedelta(minutes = 6)
+            time.sleep(2)
             return True
         else:
             raise ApiError(r.status_code)
@@ -146,6 +151,7 @@ class EldesClient:
         r = self._post("device/action/disarm", body=disarm_request)
         if r.status_code == 202:
             self.last_update["devices"] = datetime.datetime.now() - datetime.timedelta(minutes = 6)
+            time.sleep(2)
             return True
         else:
             raise ApiError(r.status_code)
