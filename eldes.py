@@ -163,3 +163,11 @@ class EldesClient:
             return r.json()
         else:
             raise ApiError(r.status_code)
+            
+    def get_automation(self, location):
+        imei = self._get_imei(location)
+        r = self._post('device/list-outputs/'+imei,{})
+        if r.status_code == 200:
+            return r.json()
+        else:
+            raise ApiError(r.status_code)
